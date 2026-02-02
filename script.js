@@ -69,3 +69,99 @@ if (hamburger) {
         }
     });
 }
+
+// Background Music Control
+const musicBtn = document.getElementById('music-btn');
+const audio = document.getElementById('bg-music');
+let isPlaying = false;
+const loopStart = 12; // 0:12
+const loopEnd = 39;   // 0:39
+const fadeDuration = 2000; // 2 seconds
+
+// Set start time
+audio.currentTime = loopStart;
+audio.volume = 0; // Start muted for fade-in
+
+function fadeIn() {
+    let vol = 0;
+    const interval = 50; // ms
+    const step = 1 / (fadeDuration / interval);
+
+    const fade = setInterval(() => {
+        if (vol < 1) {
+            vol += step;
+            if (vol > 1) vol = 1;
+            audio.volume = vol;
+        } else {
+            clearInterval(fade);
+        }
+    }, interval);
+}
+
+function fadeOut(callback) {
+    let vol = audio.volume;
+    const interval = 50; // ms
+    const step = vol / (fadeDuration / interval); // Scale based on current volume
+
+    const fade = setInterval(() => {
+        if (vol > 0) {
+            vol -= step;
+            if (vol < 0) vol = 0;
+            audio.volume = vol;
+        } else {
+            clearInterval(fade);
+            if (callback) callback();
+        }
+    }, interval);
+}
+
+musicBtn.addEventListener('click', () => {
+    if (isPlaying) {
+        // Fade out then pause
+        fadeOut(() => {
+            audio.pause();
+            musicBtn.classList.remove('playing');
+        });
+    } else {
+        // Play then fade in
+        audio.play().then(() => {
+            musicBtn.classList.add('playing');
+            fadeIn();
+        }).catch(err => {
+            console.log("Audio play failed:", err);
+            alert("Please interact with the document first to play audio.");
+        });
+    }
+    isPlaying = !isPlaying;
+});
+
+// Loop Logic with Fade
+audio.addEventListener('timeupdate', () => {
+    // Fade out before loop end
+    if (audio.currentTime >= loopEnd - 2 && audio.volume > 0.1) {
+        // Simple linear fade out based on time remainder
+        const timeRemaining = loopEnd - audio.currentTime;
+        if (timeRemaining <= 2) {
+            audio.volume = Math.max(0, timeRemaining / 2);
+        }
+    }
+
+    // Loop reset
+    if (audio.currentTime >= loopEnd) {
+        audio.currentTime = loopStart;
+        // Fade in quickly after loop
+        audio.volume = 0;
+        // We can reuse a faster fade-in logic here or just rely on the physics of the loop
+        // Let's do a quick restore
+        let vol = 0;
+        const quickFade = setInterval(() => {
+            if (vol < 1) {
+                vol += 0.05;
+                if (vol > 1) vol = 1;
+                audio.volume = vol;
+            } else {
+                clearInterval(quickFade);
+            }
+        }, 50);
+    }
+});
