@@ -51,7 +51,9 @@
     <!-- Hero Section -->
     <!-- Hero Section -->
     <header id="hero" class="hero-section">
-        <video autoplay muted loop playsinline class="hero-video">
+        <canvas id="hero-canvas"></canvas>
+        <video id="hero-video" autoplay muted loop playsinline preload="auto" poster="images/preview.jpg"
+            class="hero-video" style="opacity: 0; position: absolute; z-index: -1;">
             <source src="images/23.mp4" type="video/mp4">
         </video>
         <div class="hero-overlay"></div>

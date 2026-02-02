@@ -79,7 +79,16 @@ const loopEnd = 39;   // 0:39
 const fadeDuration = 2000; // 2 seconds
 
 // Set start time
-audio.currentTime = loopStart;
+// iOS restriction workaround: Set currentTime only after metadata is loaded
+audio.addEventListener('loadedmetadata', () => {
+    audio.currentTime = loopStart;
+});
+
+// Fallback: If metadata already loaded
+if (audio.readyState >= 1) {
+    audio.currentTime = loopStart;
+}
+
 audio.volume = 0; // Start muted for fade-in
 
 function fadeIn() {
@@ -123,6 +132,11 @@ musicBtn.addEventListener('click', () => {
             musicBtn.classList.remove('playing');
         });
     } else {
+        // Enforce start time if it was reset to 0 (common iOS behavior)
+        if (audio.currentTime < loopStart) {
+            audio.currentTime = loopStart;
+        }
+
         // Play then fade in
         audio.play().then(() => {
             musicBtn.classList.add('playing');
@@ -165,3 +179,53 @@ audio.addEventListener('timeupdate', () => {
         }, 50);
     }
 });
+
+// Video Canvas Rendering (Fix for Safari Flash)
+const video = document.getElementById('hero-video');
+const canvas = document.getElementById('hero-canvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas(); // Initial call
+
+function drawVideo() {
+    if (video.paused || video.ended) {
+        // Keep drawing a bit to catch up or hold frame
+        requestAnimationFrame(drawVideo);
+        return;
+    }
+
+    // Simulate object-fit: cover
+    const videoRatio = video.videoWidth / video.videoHeight;
+    const canvasRatio = canvas.width / canvas.height;
+
+    let drawWidth, drawHeight, startX, startY;
+
+    if (canvasRatio > videoRatio) {
+        drawWidth = canvas.width;
+        drawHeight = canvas.width / videoRatio;
+        startX = 0;
+        startY = (canvas.height - drawHeight) / 2;
+    } else {
+        drawWidth = canvas.height * videoRatio;
+        drawHeight = canvas.height;
+        startX = (canvas.width - drawWidth) / 2;
+        startY = 0;
+    }
+
+    ctx.drawImage(video, startX, startY, drawWidth, drawHeight);
+    requestAnimationFrame(drawVideo);
+}
+
+// Start drawing when video starts playing
+video.addEventListener('play', () => {
+    drawVideo();
+});
+
+// Also start loop immediately in case it's autoplaying
+drawVideo();
