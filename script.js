@@ -74,20 +74,7 @@ if (hamburger) {
 const musicBtn = document.getElementById('music-btn');
 const audio = document.getElementById('bg-music');
 let isPlaying = false;
-const loopStart = 12; // 0:12
-const loopEnd = 39;   // 0:39
 const fadeDuration = 2000; // 2 seconds
-
-// Set start time
-// iOS restriction workaround: Set currentTime only after metadata is loaded
-audio.addEventListener('loadedmetadata', () => {
-    audio.currentTime = loopStart;
-});
-
-// Fallback: If metadata already loaded
-if (audio.readyState >= 1) {
-    audio.currentTime = loopStart;
-}
 
 audio.volume = 0; // Start muted for fade-in
 
@@ -132,11 +119,6 @@ musicBtn.addEventListener('click', () => {
             musicBtn.classList.remove('playing');
         });
     } else {
-        // Enforce start time if it was reset to 0 (common iOS behavior)
-        if (audio.currentTime < loopStart) {
-            audio.currentTime = loopStart;
-        }
-
         // Play then fade in
         audio.play().then(() => {
             musicBtn.classList.add('playing');
@@ -147,37 +129,6 @@ musicBtn.addEventListener('click', () => {
         });
     }
     isPlaying = !isPlaying;
-});
-
-// Loop Logic with Fade
-audio.addEventListener('timeupdate', () => {
-    // Fade out before loop end
-    if (audio.currentTime >= loopEnd - 2 && audio.volume > 0.1) {
-        // Simple linear fade out based on time remainder
-        const timeRemaining = loopEnd - audio.currentTime;
-        if (timeRemaining <= 2) {
-            audio.volume = Math.max(0, timeRemaining / 2);
-        }
-    }
-
-    // Loop reset
-    if (audio.currentTime >= loopEnd) {
-        audio.currentTime = loopStart;
-        // Fade in quickly after loop
-        audio.volume = 0;
-        // We can reuse a faster fade-in logic here or just rely on the physics of the loop
-        // Let's do a quick restore
-        let vol = 0;
-        const quickFade = setInterval(() => {
-            if (vol < 1) {
-                vol += 0.05;
-                if (vol > 1) vol = 1;
-                audio.volume = vol;
-            } else {
-                clearInterval(quickFade);
-            }
-        }, 50);
-    }
 });
 
 // Video Canvas Rendering (Fix for Safari Flash)
